@@ -1,0 +1,10 @@
+{
+  "users": [
+    {
+      "email": "pooja@example.com",
+      "name": "Pooja",
+      "password": "$2b$12$abc...xyz",  // bcrypt hashed password
+      "skin_type": "oily"
+    }
+  ]
+}
