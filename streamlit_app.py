@@ -57,11 +57,69 @@ if HAS_TORCH:
     from app.food_map import get_diet
     from app.acid_map import get_acids_for_skin_problem
 else:
-    # Demo mode placeholders
+    # Demo mode with realistic recommendations
     SkinClassifier = None
-    def get_products(skin_type): return ["Product 1", "Product 2", "Product 3"]
-    def get_diet(skin_type): return {"eat": ["Food 1", "Food 2"], "avoid": ["Food 3", "Food 4"]}
-    def get_acids_for_skin_problem(skin_type): return ["Acid 1", "Acid 2"]
+    
+    def get_products(skin_issue):
+        skin_issue = skin_issue.lower()
+        recommendations = {
+            "acne": [
+                {"name": "Salicylic Acid Cleanser", "type": "Cleanser"},
+                {"name": "Benzoyl Peroxide Gel", "type": "Spot Treatment"},
+                {"name": "Niacinamide Serum", "type": "Serum"},
+                {"name": "Oil-Free Moisturizer", "type": "Moisturizer"}
+            ],
+            "wrinkles": [
+                {"name": "Retinol Serum", "type": "Serum"},
+                {"name": "Peptide Cream", "type": "Night Cream"},
+                {"name": "Hyaluronic Acid Moisturizer", "type": "Moisturizer"},
+                {"name": "Broad Spectrum Sunscreen SPF 50", "type": "Sunscreen"}
+            ],
+            "dark spots": [
+                {"name": "Kojic Acid Cream", "type": "Cream"},
+                {"name": "Vitamin C Serum", "type": "Serum"},
+                {"name": "Glycolic Acid Toner", "type": "Toner"},
+                {"name": "Alpha Arbutin Gel", "type": "Gel"}
+            ],
+            "pigmentation": [
+                {"name": "Niacinamide + Zinc Serum", "type": "Serum"},
+                {"name": "Azelaic Acid Cream", "type": "Cream"},
+                {"name": "Tranexamic Acid Solution", "type": "Serum"},
+                {"name": "Licorice Root Extract Gel", "type": "Gel"}
+            ]
+        }
+        return recommendations.get(skin_issue, [{"name": "No products found", "type": "N/A"}])
+    
+    def get_diet(skin_issue):
+        skin_issue = skin_issue.lower()
+        diet_map = {
+            "acne": {
+                "eat": ["Green leafy vegetables", "Berries", "Whole grains", "Zinc-rich foods"],
+                "avoid": ["Sugar", "Dairy products", "Refined carbs", "Fast food"]
+            },
+            "wrinkles": {
+                "eat": ["Blueberries", "Avocados", "Nuts", "Green tea"],
+                "avoid": ["Red meat", "Alcohol", "Deep-fried snacks"]
+            },
+            "dark spots": {
+                "eat": ["Citrus fruits", "Papaya", "Tomatoes", "Pumpkin seeds"],
+                "avoid": ["Sugary drinks", "Greasy food", "Processed snacks"]
+            },
+            "pigmentation": {
+                "eat": ["Carrots", "Spinach", "Almonds", "Sunflower seeds"],
+                "avoid": ["Soda", "White bread", "Overcooked meat"]
+            }
+        }
+        return diet_map.get(skin_issue, {"eat": ["No data"], "avoid": ["No data"]})
+    
+    def get_acids_for_skin_problem(skin_problem):
+        acids = {
+            "acne": ["Salicylic Acid", "Niacinamide", "Tea Tree Oil"],
+            "pigmentation": ["Kojic Acid", "Glycolic Acid", "Alpha Arbutin"],
+            "wrinkles": ["Retinol", "Peptides", "Hyaluronic Acid"],
+            "dark spots": ["Vitamin C", "Tranexamic Acid", "Licorice Extract"]
+        }
+        return acids.get(skin_problem.lower(), ["No specific acids found"])
 
 # === Configuration ===
 CONFIG_PATH = "config.yaml"
@@ -148,7 +206,10 @@ def generate_pdf(predicted_class, products, acids, diet, username="user", probab
             
             f.write("Recommended Products:\n")
             for item in products:
-                f.write(f"  - {item}\n")
+                if isinstance(item, dict):
+                    f.write(f"  - {item['name']} ({item['type']})\n")
+                else:
+                    f.write(f"  - {item}\n")
             f.write("\n")
             
             f.write("Recommended Acids:\n")
@@ -204,7 +265,10 @@ def generate_pdf(predicted_class, products, acids, diet, username="user", probab
     ):
         pdf.cell(200, 10, txt=section + ":", ln=True)
         for item in items:
-            pdf.cell(200, 10, txt=f" - {item}", ln=True)
+            if isinstance(item, dict):
+                pdf.cell(200, 10, txt=f" - {item['name']} ({item['type']})", ln=True)
+            else:
+                pdf.cell(200, 10, txt=f" - {item}", ln=True)
         pdf.ln(2)
 
     if chart_path and os.path.exists(chart_path):
@@ -365,7 +429,10 @@ elif st.session_state.page == "results":
     st.markdown(f'<div class="subtitle">🧴 Recommended Products</div>', unsafe_allow_html=True)
     st.markdown('<div class="section">', unsafe_allow_html=True)
     for item in products:
-        st.markdown(f"✔️ {item}")
+        if isinstance(item, dict):
+            st.markdown(f"✔️ **{item['name']}** - {item['type']}")
+        else:
+            st.markdown(f"✔️ {item}")
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown(f'<div class="subtitle">🧪 Acids to Look For</div>', unsafe_allow_html=True)
