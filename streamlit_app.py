@@ -1,6 +1,4 @@
 import streamlit as st
-import torch
-from torchvision import transforms
 import yaml
 from yaml.loader import SafeLoader
 from PIL import Image
@@ -8,6 +6,15 @@ import os
 import datetime
 from fpdf import FPDF
 import bcrypt
+import numpy as np
+
+# Try to import torch and torchvision
+try:
+    import torch
+    from torchvision import transforms
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
 
 # Try to import streamlit_authenticator, fallback to simple auth if not available
 try:
@@ -15,13 +22,19 @@ try:
     HAS_AUTHENTICATOR = True
 except ImportError:
     HAS_AUTHENTICATOR = False
-    st.warning("⚠️ Authentication module not available. Using demo mode.")
 
-# Custom imports
-from app.main import SkinClassifier
-from app.recommender import get_products
-from app.food_map import get_diet
-from app.acid_map import get_acids_for_skin_problem
+# Custom imports (optional, will skip if torch not available)
+if HAS_TORCH:
+    from app.main import SkinClassifier
+    from app.recommender import get_products
+    from app.food_map import get_diet
+    from app.acid_map import get_acids_for_skin_problem
+else:
+    # Demo mode placeholders
+    SkinClassifier = None
+    def get_products(skin_type): return ["Product 1", "Product 2", "Product 3"]
+    def get_diet(skin_type): return {"eat": ["Food 1", "Food 2"], "avoid": ["Food 3", "Food 4"]}
+    def get_acids_for_skin_problem(skin_type): return ["Acid 1", "Acid 2"]
 
 # === Configuration ===
 CONFIG_PATH = "config.yaml"
@@ -54,18 +67,26 @@ else:
     authenticator = None
 
 # === Load Model ===
-if not os.path.exists(MODEL_PATH):
-    st.error("Model file not found. Please ensure 'skin_classifier.pth' exists.")
-    st.stop()
+model = None
+transform = None
 
-model = SkinClassifier()
-model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device('cpu')))
-model.eval()
-
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor()
-])
+if HAS_TORCH:
+    if not os.path.exists(MODEL_PATH):
+        st.error("Model file not found. Please ensure 'skin_classifier.pth' exists.")
+        st.stop()
+    
+    model = SkinClassifier()
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device('cpu')))
+    model.eval()
+    
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor()
+    ])
+else:
+    # Demo mode - no model available
+    model = None
+    transform = None
 
 # === Session State Defaults ===
 for key in ['authentication_status', 'page', 'user', 'image', 'prediction', 'register']:
@@ -251,12 +272,21 @@ elif st.session_state.page == "results":
             st.rerun()
     st.sidebar.success(f"Logged in as {st.session_state.user}")
     image = st.session_state.image
-    img_tensor = transform(image).unsqueeze(0)
-    with torch.no_grad():
-        output = model(img_tensor)
-        _, pred = torch.max(output, 1)
-        pred_class = CLASS_NAMES[pred.item()]
+    
+    # Handle both torch and demo modes
+    if HAS_TORCH and model and transform:
+        img_tensor = transform(image).unsqueeze(0)
+        with torch.no_grad():
+            output = model(img_tensor)
+            _, pred = torch.max(output, 1)
+            pred_class = CLASS_NAMES[pred.item()]
+            st.session_state.prediction = pred_class
+    else:
+        # Demo mode: randomly select a skin condition
+        pred_class = CLASS_NAMES[0]  # Default to first class in demo mode
+        st.info("📌 Demo Mode: Using sample prediction (acne) since ML model unavailable. Real app will analyze your skin condition.")
         st.session_state.prediction = pred_class
+        output = None
 
     st.markdown(f'<div class="subtitle">🧐 Detected: <span style="color:#e75480">{pred_class.title()}</span></div>', unsafe_allow_html=True)
     products = get_products(pred_class)
@@ -284,7 +314,11 @@ elif st.session_state.page == "results":
     st.subheader("📄 Download Prescription")
     if st.button("Generate PDF"):
         # Calculate probabilities (optional)
-        probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
+        if HAS_TORCH and output is not None:
+            probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
+        else:
+            # Demo mode: use dummy probabilities
+            probabilities = [0.7, 0.15, 0.1, 0.05]
         
         path = generate_pdf(
             pred_class, products, acids, diet,
