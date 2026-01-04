@@ -2,8 +2,14 @@ import streamlit as st
 import os
 import datetime
 from PIL import Image
-import bcrypt
 import numpy as np
+
+# Try to import bcrypt
+try:
+    import bcrypt
+    HAS_BCRYPT = True
+except ImportError:
+    HAS_BCRYPT = False
 
 # Try to import fpdf
 try:
@@ -247,15 +253,18 @@ if st.session_state.register:
         if new_username in config["credentials"]["usernames"]:
             st.error("Username already exists.")
         else:
-            hashed_pw = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
-            config["credentials"]["usernames"][new_username] = {
-                "name": new_name,
-                "password": hashed_pw
-            }
-            with open(CONFIG_PATH, "w") as f:
-                yaml.dump(config, f)
-            st.success("✅ Registered Successfully! You can now log in.")
-            st.session_state.register = False
+            if HAS_BCRYPT and HAS_YAML:
+                hashed_pw = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+                config["credentials"]["usernames"][new_username] = {
+                    "name": new_name,
+                    "password": hashed_pw
+                }
+                with open(CONFIG_PATH, "w") as f:
+                    yaml.dump(config, f)
+                st.success("✅ Registered Successfully! You can now log in.")
+                st.session_state.register = False
+            else:
+                st.warning("⚠️ Registration unavailable in demo mode. Please use demo credentials.")
 else:
     st.sidebar.button("Register", on_click=lambda: st.session_state.update({"register": True}))
 
