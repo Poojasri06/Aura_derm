@@ -64,28 +64,28 @@ else:
         skin_issue = skin_issue.lower()
         recommendations = {
             "acne": [
-                {"name": "Salicylic Acid Cleanser", "type": "Cleanser"},
-                {"name": "Benzoyl Peroxide Gel", "type": "Spot Treatment"},
-                {"name": "Niacinamide Serum", "type": "Serum"},
-                {"name": "Oil-Free Moisturizer", "type": "Moisturizer"}
+                {"name": "Salicylic Acid Cleanser (2%)", "type": "Cleanser", "brands": "CeraVe, La Roche-Posay, Neutrogena"},
+                {"name": "Benzoyl Peroxide Gel (2.5-5%)", "type": "Spot Treatment", "brands": "Differin, Clean & Clear"},
+                {"name": "Niacinamide Serum (10%)", "type": "Serum", "brands": "The Ordinary, Paula's Choice"},
+                {"name": "Oil-Free Moisturizer with SPF 30+", "type": "Moisturizer", "brands": "Cetaphil, Neutrogena"}
             ],
             "wrinkles": [
-                {"name": "Retinol Serum", "type": "Serum"},
-                {"name": "Peptide Cream", "type": "Night Cream"},
-                {"name": "Hyaluronic Acid Moisturizer", "type": "Moisturizer"},
-                {"name": "Broad Spectrum Sunscreen SPF 50", "type": "Sunscreen"}
+                {"name": "Retinol Serum (0.5-1%)", "type": "Serum", "brands": "RoC, Olay Regenerist, The Ordinary"},
+                {"name": "Peptide Complex Cream", "type": "Night Cream", "brands": "The INKEY List, Drunk Elephant"},
+                {"name": "Hyaluronic Acid Moisturizer", "type": "Moisturizer", "brands": "Neutrogena, CeraVe, La Roche-Posay"},
+                {"name": "Broad Spectrum Sunscreen SPF 50+", "type": "Sunscreen", "brands": "EltaMD, Supergoop, Neutrogena"}
             ],
             "dark spots": [
-                {"name": "Kojic Acid Cream", "type": "Cream"},
-                {"name": "Vitamin C Serum", "type": "Serum"},
-                {"name": "Glycolic Acid Toner", "type": "Toner"},
-                {"name": "Alpha Arbutin Gel", "type": "Gel"}
+                {"name": "Kojic Acid Cream (2%)", "type": "Cream", "brands": "ADMIRE MY SKIN, PCA Skin"},
+                {"name": "Vitamin C Serum (15-20%)", "type": "Serum", "brands": "Drunk Elephant, SkinCeuticals, TruSkin"},
+                {"name": "Glycolic Acid Toner (7%)", "type": "Toner", "brands": "The Ordinary, Pixi, Paula's Choice"},
+                {"name": "Alpha Arbutin Serum (2%)", "type": "Serum", "brands": "The Ordinary, Good Molecules"}
             ],
             "pigmentation": [
-                {"name": "Niacinamide + Zinc Serum", "type": "Serum"},
-                {"name": "Azelaic Acid Cream", "type": "Cream"},
-                {"name": "Tranexamic Acid Solution", "type": "Serum"},
-                {"name": "Licorice Root Extract Gel", "type": "Gel"}
+                {"name": "Niacinamide + Zinc Serum (10%)", "type": "Serum", "brands": "The Ordinary, Paula's Choice, CeraVe"},
+                {"name": "Azelaic Acid Suspension (10%)", "type": "Cream", "brands": "The Ordinary, Paula's Choice, Finacea"},
+                {"name": "Tranexamic Acid Solution (3%)", "type": "Serum", "brands": "The INKEY List, Good Molecules"},
+                {"name": "Licorice Root + Kojic Acid", "type": "Serum", "brands": "Krave Beauty, Acwell"}
             ]
         }
         return recommendations.get(skin_issue, [{"name": "No products found", "type": "N/A"}])
@@ -377,6 +377,31 @@ elif st.session_state.page == "upload":
     
     st.sidebar.success(f"Logged in as {st.session_state.user}")
     st.markdown('<div class="title">💆‍♀️ Upload or Capture Image</div>', unsafe_allow_html=True)
+    
+    # Photo Guidance Tips
+    with st.expander("📸 Photo Tips for Best Results", expanded=False):
+        st.markdown("""
+        **💡 Lighting Recommendations:**
+        - Use **natural daylight** from a window (not direct sunlight)
+        - Face the light source directly
+        - Avoid harsh overhead lights or shadows
+        - Best time: Morning or late afternoon natural light
+        - Indoor tip: Use soft white LED light from the front
+        
+        **🎯 Face Posture & Position:**
+        - Look **directly at the camera**
+        - Keep your face **centered** in the frame
+        - Maintain a **neutral expression** (no smiling or frowning)
+        - Remove glasses, hats, or accessories
+        - Ensure face is **clean and makeup-free** for accurate analysis
+        - Distance: 1-2 feet from camera for clear detail
+        
+        **✅ Image Quality:**
+        - Use a **clear, high-resolution** camera
+        - Avoid blurry or pixelated images
+        - Entire face should be visible (forehead to chin)
+        """)
+    
     input_method = st.radio("Select Image Input", ['📄 Upload Image', '📸 Camera'])
     image = None
     if input_method == "📄 Upload Image":
@@ -430,7 +455,10 @@ elif st.session_state.page == "results":
     st.markdown('<div class="section">', unsafe_allow_html=True)
     for item in products:
         if isinstance(item, dict):
-            st.markdown(f"✔️ **{item['name']}** - {item['type']}")
+            product_text = f"✔️ **{item['name']}** - {item['type']}"
+            if 'brands' in item:
+                product_text += f"\n   *Suggested brands: {item['brands']}*"
+            st.markdown(product_text)
         else:
             st.markdown(f"✔️ {item}")
     st.markdown('</div>', unsafe_allow_html=True)
