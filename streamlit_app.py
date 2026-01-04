@@ -339,26 +339,37 @@ elif st.session_state.page == "results":
         st.image(image, caption="Analyzed Image", width=400)
     
     # Predict skin condition
+    probabilities = None
+    output = None
+    pred_class = None
+    
     with st.spinner("🔬 Analyzing your skin..."):
-        if model is not None:
-            img_tensor = transform(image).unsqueeze(0)
-            with torch.no_grad():
-                output = model(img_tensor)
-                _, pred = torch.max(output, 1)
-                pred_class = CLASS_NAMES[pred.item()]
+        try:
+            if model is not None:
+                img_tensor = transform(image).unsqueeze(0)
+                with torch.no_grad():
+                    output = model(img_tensor)
+                    _, pred = torch.max(output, 1)
+                    pred_class = CLASS_NAMES[pred.item()]
+                    st.session_state.prediction = pred_class
+                    probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
+            else:
+                # Demo mode - simulate prediction based on image hash for consistency
+                import hashlib
+                img_hash = hashlib.md5(image.tobytes()).hexdigest()
+                pred_idx = int(img_hash, 16) % len(CLASS_NAMES)
+                pred_class = CLASS_NAMES[pred_idx]
                 st.session_state.prediction = pred_class
-                probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
-        else:
-            # Demo mode - simulate prediction based on image hash for consistency
-            import hashlib
-            img_hash = hashlib.md5(image.tobytes()).hexdigest()
-            pred_idx = int(img_hash, 16) % len(CLASS_NAMES)
-            pred_class = CLASS_NAMES[pred_idx]
-            st.session_state.prediction = pred_class
-            st.info("🔬 Running in demo mode - predictions are simulated for demonstration purposes")
-            # Create simulated probabilities
-            probabilities = [0.15, 0.20, 0.15, 0.15]
-            probabilities[pred_idx] = 0.65
+                st.info("🔬 Running in demo mode - predictions are simulated for demonstration purposes")
+                # Create simulated probabilities
+                probabilities = [0.15, 0.20, 0.15, 0.15]
+                probabilities[pred_idx] = 0.65
+                output = torch.tensor([probabilities])
+        except Exception as e:
+            st.error(f"Error during analysis: {e}")
+            # Fallback to acne as default
+            pred_class = "acne"
+            probabilities = [0.7, 0.1, 0.1, 0.1]
             output = torch.tensor([probabilities])
 
     # Show detection result with emphasis
@@ -409,13 +420,18 @@ elif st.session_state.page == "results":
         
         # Show confidence chart
         st.markdown(f'<div class="subtitle">📊 Confidence Levels</div>', unsafe_allow_html=True)
-        confidence_data = {CLASS_NAMES[i]: probabilities[i] for i in range(len(CLASS_NAMES))}
-        st.bar_chart(confidence_data)
+        if probabilities:
+            confidence_data = {CLASS_NAMES[i]: probabilities[i] for i in range(len(CLASS_NAMES))}
+            st.bar_chart(confidence_data)
 
     st.subheader("📄 Download Prescription")
     if st.button("Generate PDF"):
-        # Calculate probabilities (optional)
-        probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
+        # Use already calculated probabilities or recalculate if needed
+        if probabilities is None and output is not None:
+            probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
+        elif probabilities is None:
+            # Fallback probabilities
+            probabilities = [0.25, 0.25, 0.25, 0.25]
         
         path = generate_pdf(
             pred_class, products, acids, diet,
