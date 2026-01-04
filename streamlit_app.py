@@ -40,8 +40,7 @@ authenticator = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
     config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    config['preauthorized']
+    config['cookie']['expiry_days']
 )
 
 # === Load Model ===
@@ -240,7 +239,7 @@ st.markdown("""
 
 # === Logo ===
 if os.path.exists(LOGO_PATH):
-    st.sidebar.image(LOGO_PATH, use_column_width=True)
+    st.sidebar.image(LOGO_PATH, width=250)
 else:
     st.sidebar.title("Aura Derm")
 
@@ -272,7 +271,16 @@ if st.session_state.page == "login":
     st.markdown('<p style="text-align: center; font-size: 18px; color: #666; margin-bottom: 30px;">✨ Your AI-Powered Skincare Advisor ✨</p>', unsafe_allow_html=True)
     st.markdown('<p style="text-align: center; font-size: 16px; color: #888; margin-bottom: 30px;">Get personalized skincare recommendations based on AI analysis</p>', unsafe_allow_html=True)
     
-    name, auth_status, username = authenticator.login("Login", location="main")
+    try:
+        result = authenticator.login(location="main")
+        if result is not None:
+            name, auth_status, username = result
+        else:
+            name, auth_status, username = None, None, None
+    except Exception as e:
+        st.error(f"Login error: {e}")
+        name, auth_status, username = None, False, None
+    
     if auth_status:
         st.session_state.page = "upload"
         st.session_state.user = name
@@ -301,14 +309,14 @@ elif st.session_state.page == "upload":
             image = Image.open(uploaded).convert("RGB")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                st.image(image, caption="✅ Uploaded Image", use_column_width=True)
+                st.image(image, caption="✅ Uploaded Image", width=400)
     else:
         cam = st.camera_input("📸 Take a clear face photo")
         if cam:
             image = Image.open(cam).convert("RGB")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                st.image(image, caption="✅ Captured Image", use_column_width=True)
+                st.image(image, caption="✅ Captured Image", width=400)
     
     if image:
         st.session_state.image = image
@@ -328,7 +336,7 @@ elif st.session_state.page == "results":
     # Display image in center
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.image(image, caption="Analyzed Image", use_column_width=True)
+        st.image(image, caption="Analyzed Image", width=400)
     
     # Predict skin condition
     with st.spinner("🔬 Analyzing your skin..."):

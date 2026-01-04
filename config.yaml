@@ -3,11 +3,11 @@ credentials:
     admin:
       email: admin@auraderm.com
       name: Admin User
-      password: $2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5aeWG5xJq7JYK  # password: admin123
+      password: $2b$12$ku3MJmlj.HdIkWNfnECSmeLVtynSEmyfj.q3uu/cMCM2NrMrr.gha
     demo:
       email: demo@auraderm.com
       name: Demo User
-      password: $2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW  # password: demo123
+      password: $2b$12$G9rluLV2vr1dv1TQBupKqOCYFM7f3ogUG6cROUcyaUGQAi91kGmpa
 cookie:
   expiry_days: 30
   key: auraderm_secret_key_12345
