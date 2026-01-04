@@ -9,6 +9,8 @@ import os
 import datetime
 from fpdf import FPDF
 import bcrypt
+import matplotlib.pyplot as plt
+import hashlib
 
 # Custom imports
 from main import SkinClassifier
@@ -74,8 +76,6 @@ if st.session_state.page is None:
     st.session_state.page = 'login'
 
 # === PDF Generator ===
-import matplotlib.pyplot as plt
-
 def generate_pdf(predicted_class, products, acids, diet, username="user", probabilities=None):
     # === Setup filenames ===
     now = datetime.datetime.now()
@@ -123,6 +123,12 @@ def generate_pdf(predicted_class, products, acids, diet, username="user", probab
         pdf.ln(5)
         pdf.cell(200, 10, txt="Prediction Confidence Chart:", ln=True)
         pdf.image(chart_path, x=10, y=None, w=180)
+        
+        # Clean up temporary chart file after adding to PDF
+        try:
+            os.remove(chart_path)
+        except:
+            pass  # Silently ignore if cleanup fails
 
     pdf.output(path)
     return path
@@ -355,7 +361,6 @@ elif st.session_state.page == "results":
                     probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
             else:
                 # Demo mode - simulate prediction based on image hash for consistency
-                import hashlib
                 img_hash = hashlib.md5(image.tobytes()).hexdigest()
                 pred_idx = int(img_hash, 16) % len(CLASS_NAMES)
                 pred_class = CLASS_NAMES[pred_idx]
