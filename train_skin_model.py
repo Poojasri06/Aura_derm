@@ -69,5 +69,3 @@ for epoch in range(epochs):
 # ===== Save Model =====
 torch.save(model.state_dict(), model_save_path)
 print("✅ Model saved to:", model_save_path)
-import streamlit as st
-from PIL import Image   

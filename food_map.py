@@ -1,4 +1,4 @@
-# app/food_map.py
+# food_map.py
 
 def get_diet(skin_issue):
     skin_issue = skin_issue.lower()
@@ -23,4 +23,3 @@ def get_diet(skin_issue):
     }
 
     return diet_map.get(skin_issue, {"eat": ["No data"], "avoid": ["No data"]})
-    st.markdown("Here are some dietary suggestions to help improve your skin condition:")       

@@ -1,4 +1,4 @@
-# D:/Aura_derm/app/main.py
+# main.py
 
 import torch
 import torch.nn as nn
@@ -11,5 +11,4 @@ class SkinClassifier(nn.Module):
         self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
 
     def forward(self, x):
-        return self.model(x)
-        st.markdown("### Your Skin Condition Prediction")       
+        return self.model(x)       

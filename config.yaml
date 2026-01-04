@@ -1,0 +1,17 @@
+credentials:
+  usernames:
+    admin:
+      email: admin@auraderm.com
+      name: Admin User
+      password: $2b$12$ku3MJmlj.HdIkWNfnECSmeLVtynSEmyfj.q3uu/cMCM2NrMrr.gha
+    demo:
+      email: demo@auraderm.com
+      name: Demo User
+      password: $2b$12$G9rluLV2vr1dv1TQBupKqOCYFM7f3ogUG6cROUcyaUGQAi91kGmpa
+cookie:
+  expiry_days: 30
+  key: auraderm_secret_key_12345
+  name: auraderm_cookie
+preauthorized:
+  emails:
+    - admin@auraderm.com
