@@ -1,0 +1,21 @@
+[client]
+showErrorDetails = true
+logger.level = "error"
+
+[logger]
+level = "error"
+
+[theme]
+primaryColor = "#e75480"
+backgroundColor = "#fff6f9"
+secondaryBackgroundColor = "#ffe4ec"
+textColor = "#000000"
+font = "sans serif"
+
+[server]
+maxUploadSize = 200
+enableCORS = false
+enableXsrfProtection = true
+
+[runner]
+magicEnabled = true
