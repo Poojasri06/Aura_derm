@@ -250,16 +250,16 @@ elif st.session_state.page == "results":
 
     st.subheader("📄 Download Prescription")
     if st.button("Generate PDF"):
-    # Calculate probabilities (optional)
-    probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
-    
-    path = generate_pdf(
-        pred_class, products, acids, diet,
-        username=st.session_state.user,
-        probabilities=probabilities
-    )
-    with open(path, "rb") as f:
-        st.download_button("⬇️ Download PDF", f, file_name=os.path.basename(path))
-    st.success(f"Prescription generated: {os.path.basename(path)}")
+        # Calculate probabilities (optional)
+        probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
+        
+        path = generate_pdf(
+            pred_class, products, acids, diet,
+            username=st.session_state.user,
+            probabilities=probabilities
+        )
+        with open(path, "rb") as f:
+            st.download_button("⬇️ Download PDF", f, file_name=os.path.basename(path))
+        st.success(f"Prescription generated: {os.path.basename(path)}")
 # === Footer ===
 st.markdown("<hr><center>Made with 💗 by Pooja • Aura Derm 2025</center>", unsafe_allow_html=True)
