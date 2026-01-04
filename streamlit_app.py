@@ -2,9 +2,16 @@ import streamlit as st
 import os
 import datetime
 from PIL import Image
-from fpdf import FPDF
 import bcrypt
 import numpy as np
+
+# Try to import fpdf
+try:
+    from fpdf import FPDF
+    HAS_FPDF = True
+except ImportError:
+    FPDF = None
+    HAS_FPDF = False
 
 # Try to import yaml
 try:
@@ -116,6 +123,38 @@ def generate_pdf(predicted_class, products, acids, diet, username="user", probab
     filename = f"AuraDerm_{username}_{date_str}.pdf"
     path = os.path.join(DOWNLOAD_FOLDER, filename)
     
+    if not HAS_FPDF:
+        # Fallback: create a simple text file instead of PDF
+        filename = filename.replace('.pdf', '.txt')
+        path = os.path.join(DOWNLOAD_FOLDER, filename)
+        with open(path, 'w') as f:
+            f.write("AURA DERM - SKIN ANALYSIS REPORT\n")
+            f.write("=" * 50 + "\n\n")
+            f.write(f"Date: {now.strftime('%Y-%m-%d %H:%M')}\n")
+            f.write(f"User: {username}\n")
+            f.write(f"Detected Skin Issue: {predicted_class.title()}\n\n")
+            
+            f.write("Recommended Products:\n")
+            for item in products:
+                f.write(f"  - {item}\n")
+            f.write("\n")
+            
+            f.write("Recommended Acids:\n")
+            for item in acids:
+                f.write(f"  - {item}\n")
+            f.write("\n")
+            
+            f.write("Foods to Eat:\n")
+            for item in diet.get('eat', []):
+                f.write(f"  - {item}\n")
+            f.write("\n")
+            
+            f.write("Foods to Avoid:\n")
+            for item in diet.get('avoid', []):
+                f.write(f"  - {item}\n")
+        
+        return path
+    
     # === Optional: Save bar chart of model probabilities ===
     chart_path = os.path.join(DOWNLOAD_FOLDER, f"chart_{date_str}.png")
     if probabilities:
@@ -145,7 +184,7 @@ def generate_pdf(predicted_class, products, acids, diet, username="user", probab
 
     for section, items in zip(
         ["Recommended Products", "Recommended Acids", "Foods to Eat", "Foods to Avoid"],
-        [products, acids, diet['eat'], diet['avoid']]
+        [products, acids, diet.get('eat', []), diet.get('avoid', [])]
     ):
         pdf.cell(200, 10, txt=section + ":", ln=True)
         for item in items:
@@ -331,13 +370,24 @@ elif st.session_state.page == "results":
             # Demo mode: use dummy probabilities
             probabilities = [0.7, 0.15, 0.1, 0.05]
         
-        path = generate_pdf(
-            pred_class, products, acids, diet,
-            username=st.session_state.user,
-            probabilities=probabilities
-        )
-        with open(path, "rb") as f:
-            st.download_button("⬇️ Download PDF", f, file_name=os.path.basename(path))
-        st.success(f"Prescription generated: {os.path.basename(path)}")
+        if HAS_FPDF:
+            path = generate_pdf(
+                pred_class, products, acids, diet,
+                username=st.session_state.user,
+                probabilities=probabilities
+            )
+            with open(path, "rb") as f:
+                st.download_button("⬇️ Download PDF", f, file_name=os.path.basename(path))
+            st.success(f"Prescription generated: {os.path.basename(path)}")
+        else:
+            # Fallback: generate as text file
+            path = generate_pdf(
+                pred_class, products, acids, diet,
+                username=st.session_state.user,
+                probabilities=probabilities
+            )
+            with open(path, "rb") as f:
+                st.download_button("⬇️ Download Report (Text)", f, file_name=os.path.basename(path))
+            st.info("📌 PDF generation unavailable - generated text report instead. Install fpdf2 for PDF support.")
 # === Footer ===
 st.markdown("<hr><center>Made with 💗 by Pooja • Aura Derm 2025</center>", unsafe_allow_html=True)
