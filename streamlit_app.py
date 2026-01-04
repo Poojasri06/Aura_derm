@@ -11,6 +11,14 @@ try:
 except ImportError:
     HAS_BCRYPT = False
 
+# Try to import matplotlib
+try:
+    import matplotlib.pyplot as plt
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+    plt = None
+
 # Try to import fpdf
 try:
     from fpdf import FPDF
@@ -120,8 +128,6 @@ if st.session_state.page is None:
     st.session_state.page = 'login'
 
 # === PDF Generator ===
-import matplotlib.pyplot as plt
-
 def generate_pdf(predicted_class, products, acids, diet, username="user", probabilities=None):
     # === Setup filenames ===
     now = datetime.datetime.now()
@@ -162,16 +168,20 @@ def generate_pdf(predicted_class, products, acids, diet, username="user", probab
         return path
     
     # === Optional: Save bar chart of model probabilities ===
-    chart_path = os.path.join(DOWNLOAD_FOLDER, f"chart_{date_str}.png")
-    if probabilities:
-        plt.figure(figsize=(6, 4))
-        plt.bar(CLASS_NAMES, probabilities, color="#e75480")
-        plt.xlabel("Skin Issues")
-        plt.ylabel("Prediction Confidence")
-        plt.title("Skin Issue Prediction Confidence")
-        plt.tight_layout()
-        plt.savefig(chart_path)
-        plt.close()
+    chart_path = None
+    if probabilities and HAS_MATPLOTLIB and plt is not None:
+        try:
+            chart_path = os.path.join(DOWNLOAD_FOLDER, f"chart_{date_str}.png")
+            plt.figure(figsize=(6, 4))
+            plt.bar(CLASS_NAMES, probabilities, color="#e75480")
+            plt.xlabel("Skin Issues")
+            plt.ylabel("Prediction Confidence")
+            plt.title("Skin Issue Prediction Confidence")
+            plt.tight_layout()
+            plt.savefig(chart_path)
+            plt.close()
+        except Exception:
+            chart_path = None
     else:
         chart_path = None
 
