@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit_authenticator as stauth
 import torch
 from torchvision import transforms
 import yaml
@@ -9,6 +8,14 @@ import os
 import datetime
 from fpdf import FPDF
 import bcrypt
+
+# Try to import streamlit_authenticator, fallback to simple auth if not available
+try:
+    import streamlit_authenticator as stauth
+    HAS_AUTHENTICATOR = True
+except ImportError:
+    HAS_AUTHENTICATOR = False
+    st.warning("⚠️ Authentication module not available. Using demo mode.")
 
 # Custom imports
 from app.main import SkinClassifier
@@ -35,13 +42,16 @@ with open(CONFIG_PATH) as file:
     config = yaml.load(file, Loader=SafeLoader)
 
 # === Initialize Authenticator ===
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    config['preauthorized']
-)
+if HAS_AUTHENTICATOR:
+    authenticator = stauth.Authenticate(
+        config['credentials'],
+        config['cookie']['name'],
+        config['cookie']['key'],
+        config['cookie']['expiry_days'],
+        config['preauthorized']
+    )
+else:
+    authenticator = None
 
 # === Load Model ===
 if not os.path.exists(MODEL_PATH):
@@ -181,19 +191,36 @@ else:
 # === Login ===
 if st.session_state.page == "login":
     st.markdown('<div class="title">💆‍♀️ Aura Derm</div>', unsafe_allow_html=True)
-    name, auth_status, username = authenticator.login("Login", location="main")
-    if auth_status:
-        st.session_state.page = "upload"
-        st.session_state.user = name
-        st.rerun()
-    elif auth_status is False:
-        st.error("Invalid username or password")
-    elif auth_status is None:
-        st.warning("Please enter login credentials.")
+    
+    if HAS_AUTHENTICATOR and authenticator:
+        name, auth_status, username = authenticator.login("Login", location="main")
+        if auth_status:
+            st.session_state.page = "upload"
+            st.session_state.user = name
+            st.rerun()
+        elif auth_status is False:
+            st.error("Invalid username or password")
+        elif auth_status is None:
+            st.warning("Please enter login credentials.")
+    else:
+        # Simple demo mode without authentication
+        st.info("📌 Demo Mode: No authentication configured. Using demo user.")
+        demo_user = st.text_input("Enter your name (for prescription):", value="Demo User")
+        if st.button("Enter"):
+            st.session_state.page = "upload"
+            st.session_state.user = demo_user
+            st.rerun()
 
 # === Upload Page ===
 elif st.session_state.page == "upload":
-    authenticator.logout("Logout", "sidebar")
+    if HAS_AUTHENTICATOR and authenticator:
+        authenticator.logout("Logout", "sidebar")
+    else:
+        if st.sidebar.button("Logout"):
+            st.session_state.page = "login"
+            st.session_state.user = None
+            st.rerun()
+    
     st.sidebar.success(f"Logged in as {st.session_state.user}")
     st.markdown('<div class="title">💆‍♀️ Upload or Capture Image</div>', unsafe_allow_html=True)
     input_method = st.radio("Select Image Input", ['📄 Upload Image', '📸 Camera'])
@@ -215,7 +242,13 @@ elif st.session_state.page == "upload":
 
 # === Results Page ===
 elif st.session_state.page == "results":
-    authenticator.logout("Logout", "sidebar")
+    if HAS_AUTHENTICATOR and authenticator:
+        authenticator.logout("Logout", "sidebar")
+    else:
+        if st.sidebar.button("Logout"):
+            st.session_state.page = "login"
+            st.session_state.user = None
+            st.rerun()
     st.sidebar.success(f"Logged in as {st.session_state.user}")
     image = st.session_state.image
     img_tensor = transform(image).unsqueeze(0)
