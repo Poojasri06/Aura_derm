@@ -1,12 +1,18 @@
 import streamlit as st
-import yaml
-from yaml.loader import SafeLoader
-from PIL import Image
 import os
 import datetime
+from PIL import Image
 from fpdf import FPDF
 import bcrypt
 import numpy as np
+
+# Try to import yaml
+try:
+    import yaml
+    from yaml.loader import SafeLoader
+    HAS_YAML = True
+except ImportError:
+    HAS_YAML = False
 
 # Try to import torch and torchvision
 try:
@@ -47,21 +53,26 @@ if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
 # === Load YAML Config ===
-if not os.path.exists(CONFIG_PATH):
-    st.error("Configuration file not found. Please ensure 'config.yaml' exists.")
-    st.stop()
-
-with open(CONFIG_PATH) as file:
-    config = yaml.load(file, Loader=SafeLoader)
+config = None
+if HAS_YAML:
+    if not os.path.exists(CONFIG_PATH):
+        st.warning("Configuration file not found. Using demo mode without authentication.")
+        config = None
+    else:
+        with open(CONFIG_PATH) as file:
+            config = yaml.load(file, Loader=SafeLoader)
+else:
+    st.warning("⚠️ YAML module not available. Using demo mode without configuration file.")
+    config = None
 
 # === Initialize Authenticator ===
-if HAS_AUTHENTICATOR:
+if HAS_AUTHENTICATOR and config:
     authenticator = stauth.Authenticate(
-        config['credentials'],
-        config['cookie']['name'],
-        config['cookie']['key'],
-        config['cookie']['expiry_days'],
-        config['preauthorized']
+        config.get('credentials', {}),
+        config.get('cookie', {}).get('name', 'aura_derm_cookie'),
+        config.get('cookie', {}).get('key', 'aura_derm_key'),
+        config.get('cookie', {}).get('expiry_days', 1),
+        config.get('preauthorized', {})
     )
 else:
     authenticator = None
