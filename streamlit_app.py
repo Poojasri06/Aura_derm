@@ -127,7 +127,7 @@ def generate_pdf(predicted_class, products, acids, diet, username="user", probab
         # Clean up temporary chart file after adding to PDF
         try:
             os.remove(chart_path)
-        except:
+        except OSError:
             pass  # Silently ignore if cleanup fails
 
     pdf.output(path)
@@ -284,7 +284,9 @@ if st.session_state.page == "login":
         else:
             name, auth_status, username = None, None, None
     except Exception as e:
-        st.error(f"Login error: {e}")
+        # Log the error for debugging but show generic message to user
+        print(f"Login error: {e}")  # Server-side logging
+        st.error("❌ Login error occurred. Please try again or contact support.")
         name, auth_status, username = None, False, None
     
     if auth_status:
@@ -361,7 +363,8 @@ elif st.session_state.page == "results":
                     probabilities = torch.nn.functional.softmax(output, dim=1).numpy().flatten().tolist()
             else:
                 # Demo mode - simulate prediction based on image hash for consistency
-                img_hash = hashlib.md5(image.tobytes()).hexdigest()
+                # Using SHA-256 instead of MD5 for better practice
+                img_hash = hashlib.sha256(image.tobytes()).hexdigest()
                 pred_idx = int(img_hash, 16) % len(CLASS_NAMES)
                 pred_class = CLASS_NAMES[pred_idx]
                 st.session_state.prediction = pred_class
@@ -371,7 +374,9 @@ elif st.session_state.page == "results":
                 probabilities[pred_idx] = 0.65
                 output = torch.tensor([probabilities])
         except Exception as e:
-            st.error(f"Error during analysis: {e}")
+            # Log the error for debugging but show generic message to user
+            print(f"Analysis error: {e}")  # Server-side logging
+            st.error("❌ An error occurred during analysis. Please try uploading a different image.")
             # Fallback to acne as default
             pred_class = "acne"
             probabilities = [0.7, 0.1, 0.1, 0.1]
